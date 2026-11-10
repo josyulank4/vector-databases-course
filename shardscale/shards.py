@@ -53,8 +53,25 @@ def main() -> None:
           f"(max is {max(by_tenant) / mean:.2f}x mean)")
     print(f"whale tenant spans {len(spread['whale'])} shards under hash, "
           f"1 under tenant sharding")
-    # TODO (Lesson 29): the replica + compaction arithmetic —
-    # per-shard load at R replicas, merge rounds, the I/O tax.
+    hot_qps = 8000        # illustrative fleet query load, queries/sec
+    capacity = 400        # illustrative per-copy capacity in budget
+    hot = max(by_tenant) / TOTAL * hot_qps
+    print(f"hot shard load: {hot:.0f} qps against {capacity} qps per shard-copy")
+    for r in (1, 3):
+        print(f"R={r}: hot shard serves {hot / r:.0f} qps per copy "
+              f"({hot / r / capacity:.2f}x capacity)")
+    print(f"R=3, one copy lost: survivors carry {hot / 2:.0f} qps "
+          f"({hot / 2 / capacity:.2f}x capacity)")
+    print("the first replica buys survival; the third buys quorum")
+    segments, fan_in = 40, 4   # awaiting compaction; merged per group
+    rounds, written, cur = 0, 0, segments
+    while cur > fan_in:
+        written += cur
+        rounds += 1
+        cur = -(-cur // fan_in)
+    written += cur
+    print(f"compaction: {segments} segments merge to {cur} in {rounds} rounds")
+    print(f"compaction writes {written / segments:.2f}x the corpus while it runs")
     print("shardscale demo complete")
 
 
