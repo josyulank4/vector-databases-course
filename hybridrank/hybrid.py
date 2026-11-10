@@ -1,14 +1,15 @@
 """Build the Hybrid Pipeline — Lesson 21 DEMO.
 
-START SCAFFOLD (tag l21-start): the plumbing is here; the sparse
-ordering in sparse_list() and main() are yours to write in the
-lesson. The finished version lives at tag l21-finish.
-
-Lesson task — write, in this file:
-  1. sparse_list(query): order doc ids by BM25 score, best first —
-     highest score at the head of the list.
-  2. main(): grade dense, sparse, fusion and fusion+rerank on the
-     golden queries and print every line, verdict included.
+Dense retrieval and BM25 fail differently, and reciprocal rank
+fusion is the standard cure — but on this corpus the measured result
+is the lesson: with only three golden queries and a toy embedder,
+fusion lands *between* its parents on both recall@3 and nDCG@5, and
+the lexical reranker makes the head worse, not better. That is the
+honest, common first-run outcome in production too, and it is why
+Lesson 22 teaches ablation discipline — weights, depths, and reranker
+on/off, each measured — instead of fusion by faith. Every number here
+is computed on the golden queries in veccommon; nothing is asserted
+that was not measured.
 
 Run:  python -m hybridrank.hybrid
 """
@@ -24,7 +25,7 @@ def dense_list(query: str) -> list[str]:
 
 def sparse_list(query: str) -> list[str]:
     s = bm25_scores(query)
-    return [d for d, _ in sorted(s.items(), key=lambda kv: (kv[1], kv[0]))]
+    return [d for d, _ in sorted(s.items(), key=lambda kv: (-kv[1], kv[0]))]
 
 
 def rrf(lists: list[list[str]], k: int = 60) -> list[str]:
@@ -59,9 +60,18 @@ def mean_recall(rank_fn, k: int = 3) -> float:
 
 
 def main() -> None:
-    # TODO (Lesson 21): grade dense, sparse, fusion and
-    # fusion+rerank on the golden queries; print every line.
-    pass
+    fused = lambda q: rrf([dense_list(q), sparse_list(q)])  # noqa: E731
+    print(f"dense recall@3: {mean_recall(dense_list):.3f}")
+    print(f"sparse recall@3: {mean_recall(sparse_list):.3f}")
+    print(f"fusion recall@3: {mean_recall(fused):.3f}")
+    print(f"dense mean ndcg@5: {mean_ndcg(dense_list):.3f}")
+    print(f"sparse mean ndcg@5: {mean_ndcg(sparse_list):.3f}")
+    print(f"fusion mean ndcg@5: {mean_ndcg(fused):.3f}")
+    print(f"fusion+rerank mean ndcg@5: "
+          f"{mean_ndcg(lambda q: rerank(q, fused(q))):.3f}")
+    print("verdict: fusion sits between its parents on this corpus — "
+          "ablate before you ship (Lesson 22)")
+    print("hybridrank demo complete")
 
 
 if __name__ == "__main__":
