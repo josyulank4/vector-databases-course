@@ -1,8 +1,15 @@
 """IVF and PQ: Divide, Conquer, Compress — Lesson 13 DEMO.
 
-Deterministic k-means (IVF) and product quantization (PQ) over a fixed
-synthetic corpus, graded against brute-force ground truth. The recall
-cost of each structure is printed from measurement, never asserted.
+START SCAFFOLD (tag l13-start): the plumbing is here; the corpus size
+and main() are yours to write in the lesson. The finished version
+lives at tag l13-finish.
+
+Lesson task — write, in this file:
+  1. The corpus size N (the shipped value, 2000) on the constants
+     line — the whole experiment is graded against it.
+  2. main(): train the IVF centroids, build the cells, train PQ,
+     then grade all three against brute-force ground truth and
+     print the corpus line and the three recall lines.
 
 Run:  python -m indexlab.indexes
 """
@@ -13,7 +20,7 @@ import random
 from veccommon import cosine, normalize
 
 _rng = random.Random(42)
-N, DIM, CLUSTERS = 2000, 32, 8
+N, DIM, CLUSTERS = 200, 32, 8
 CENTERS = [normalize([_rng.gauss(0, 1) for _ in range(DIM)]) for _ in range(CLUSTERS)]
 POINTS: list[tuple[int, list[float]]] = []
 for cid, center in enumerate(CENTERS):
@@ -93,26 +100,9 @@ class PQ:
 def main() -> None:
     centroids = train_ivf()
     cells: dict[int, list[int]] = {}
-    for i, (_, v) in enumerate(POINTS):
-        cells.setdefault(assign(v, centroids), []).append(i)
-    pq = PQ()
-    codes = [pq.encode(v) for _, v in POINTS]
-    approx = [pq.decode(c) for c in codes]
-    rec1 = rec4 = recpq = 0.0
-    for q in QUERIES:
-        gt = ground_truth(q)
-        rec1 += len(ivf_search(q, centroids, 1, cells) & gt) / 10
-        rec4 += len(ivf_search(q, centroids, 4, cells) & gt) / 10
-        top = set(sorted(range(len(POINTS)),
-                         key=lambda i: -cosine(q, approx[i]))[:10])
-        recpq += len(top & gt) / 10
-    n = len(QUERIES)
-    print(f"corpus: {N} vectors x {DIM} dims, {CLUSTERS} ivf cells")
-    print(f"ivf recall@10 (nprobe=1): {rec1 / n:.3f}")
-    print(f"ivf recall@10 (nprobe=4): {rec4 / n:.3f}")
-    print(f"pq recall@10 (32 floats -> 8 bytes): {recpq / n:.3f}")
-    print("indexlab demo complete")
-
+    # TODO (Lesson 13): grade IVF at nprobe 1 and 4 and PQ against
+    # ground truth, and print the corpus + recall lines.
+    pass
 
 if __name__ == "__main__":
     main()
