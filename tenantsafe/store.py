@@ -1,15 +1,9 @@
 """The Tenant-Safe Store — Lesson 25 DEMO.
 
-START SCAFFOLD (tag l25-start): the plumbing is here; the tenant
-predicate in search() and main() are yours to write in the lesson.
-The finished version lives at tag l25-finish.
-
-Lesson task — write, in this file:
-  1. The tenant predicate in search(): only the caller's own
-     tenant ever enters the candidate pool — the claim is checked
-     on every query, before any ranking happens.
-  2. main(): run the acme, billing-only and globex searches and
-     print the hits, the leak count and the audit count.
+A filtered, namespaced store over the course corpus. The predicate is
+pushed into the scan (pre-filtering), the tenant claim is checked on
+every query, cross-tenant access fails closed with zero results, and
+every query writes an audit line proving the filter ran.
 
 Run:  python -m tenantsafe.store
 """
@@ -31,7 +25,7 @@ def search(tenant: str, query: str, category: str | None = None,
     given) ever enters the candidate set — nothing is filtered after
     ranking, so no cross-tenant document can surface at any k."""
     allowed = {doc_id for doc_id, m in META.items()
-               if m["tenant"] != tenant
+               if m["tenant"] == tenant
                and (category is None or m["category"] == category)}
     pool = {doc_id: VECTORS[doc_id] for doc_id in allowed}
     hits = [d for d, _ in brute_force(normalize(embed(query)), pool, k=k)]
@@ -41,9 +35,16 @@ def search(tenant: str, query: str, category: str | None = None,
 
 
 def main() -> None:
-    # TODO (Lesson 25): run the three searches; print the hits,
-    # the leak count and the audit count.
-    pass
+    mine = search("acme", "money back for a purchase")
+    print(f"acme hits: {mine}")
+    print(f"all acme: {all(META[d]['tenant'] == 'acme' for d in mine)}")
+    billing = search("acme", "money back for a purchase", category="billing")
+    print(f"acme billing-only hits: {billing}")
+    foreign = search("globex", "money back for a purchase")
+    leaked = [d for d in foreign if META[d]["tenant"] != "globex"]
+    print(f"globex cross-tenant leaks: {len(leaked)}")
+    print(f"audit lines written: {len(AUDIT)}")
+    print("tenantsafe demo complete")
 
 
 if __name__ == "__main__":
