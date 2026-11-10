@@ -1,14 +1,10 @@
 """The Selection Scorecard — Lesson 17 DEMO.
 
-START SCAFFOLD (tag l17-start): the plumbing is here; the gate
-comparison in verdict() and main() are yours to write in the
-lesson. The finished version lives at tag l17-finish.
-
-Lesson task — write, in this file:
-  1. The gate comparison in verdict(): a candidate is eligible
-     when its filtering score meets the team's minimum — the
-     boundary itself must pass.
-  2. main(): print one verdict per team, then the completion line.
+Three fictional teams, three workloads, one weighted scorecard over
+three candidate shapes (dedicated managed store, pgvector on the
+existing Postgres, self-hosted open source). The arithmetic is on
+screen; the verdicts differ because the workloads differ — which is
+the entire lesson.
 
 Run:  python -m pickfighter.select
 """
@@ -46,15 +42,15 @@ def score(weights: dict[str, int]) -> dict[str, int]:
 def verdict(team: str, weights: dict[str, int], gate: int) -> str:
     ranked = sorted(score(weights).items(), key=lambda kv: (-kv[1], kv[0]))
     for name, total in ranked:
-        if CANDIDATES[name]["filtering"] > gate:
+        if CANDIDATES[name]["filtering"] >= gate:
             return f"{team}: verdict {name} ({total} pts)"
     return f"{team}: NO candidate passes the security gate"
 
 
 def main() -> None:
-    # TODO (Lesson 17): print one verdict per team from TEAMS,
-    # then the completion line.
-    pass
+    for team, weights, gate in TEAMS:
+        print(verdict(team, weights, gate))
+    print("pickfighter demo complete")
 
 
 if __name__ == "__main__":
