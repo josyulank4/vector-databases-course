@@ -46,8 +46,13 @@ def main() -> None:
     report(100_000_000, 512)
     cut = managed_monthly(100_000_000, 1536) - managed_monthly(100_000_000, 512)
     print(f"dimension lever at 100M vectors: saves ${cut:,.0f}/mo managed")
-    # TODO (Lesson 33): the three-year review — both monthly
-    # figures across 36 months, and the annual totals.
+    m36 = managed_monthly(100_000_000, 1536) * 36
+    s36 = selfhost_monthly(100_000_000, 1536) * 36
+    print(f"three years at 100M x 1536: managed ${m36:,.0f}, self-host ${s36:,.0f}")
+    print(f"wrong dims for three years: ${cut * 36:,.0f} of avoidable managed spend")
+    print(f"the lever, held for three years: managed "
+          f"${managed_monthly(100_000_000, 512) * 36:,.0f}, self-host "
+          f"${selfhost_monthly(100_000_000, 512) * 36:,.0f}")
     print("costclock demo complete")
 
 
