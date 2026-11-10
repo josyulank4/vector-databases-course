@@ -1,10 +1,15 @@
 """Shard Math: The Simulator — Lesson 29 DEMO.
 
-200,000 synthetic vectors with a realistic tenant-size skew (one whale
-tenant holds 40%) placed two ways across 8 shards: hash sharding,
-which balances vectors and scatters every tenant, and tenant
-sharding, which colocates tenants and inherits the whale. Skew and
-hot shards come out of the simulation, not out of a slide.
+START SCAFFOLD (tag l29-start): the population table and the hash
+placement are here; the replica and compaction arithmetic in
+main() is yours to write in the lesson. The finished version
+lives at tag l29-finish.
+
+Lesson task — write, in this file:
+  1. replica math: per-shard query load at R replicas, and what a
+     second replica buys in QPS and in survival.
+  2. compaction: merge rounds to steady state, and the I/O tax
+     those rounds levy while they run.
 
 Run:  python -m shardscale.shards
 """
@@ -48,6 +53,8 @@ def main() -> None:
           f"(max is {max(by_tenant) / mean:.2f}x mean)")
     print(f"whale tenant spans {len(spread['whale'])} shards under hash, "
           f"1 under tenant sharding")
+    # TODO (Lesson 29): the replica + compaction arithmetic —
+    # per-shard load at R replicas, merge rounds, the I/O tax.
     print("shardscale demo complete")
 
 
