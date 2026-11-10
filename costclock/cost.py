@@ -1,10 +1,15 @@
 """Price the Workload — Lesson 33 DEMO.
 
-RAM-first cost arithmetic for a vector workload, managed vs self-host,
-plus the dimension lever: truncating 1536 -> 512 dimensions moves both
-the memory bill and the fleet size. Prices are illustrative planning
-figures (labelled as such in the lesson); the arithmetic shape — RAM
-dominates, replicas multiply, dimensions divide — is the content.
+START SCAFFOLD (tag l33-start): the pricing constants and the two
+monthly-cost functions are here; the three-year review in main()
+is yours to write in the lesson. The finished version lives at
+tag l33-finish.
+
+Lesson task — write, in this file:
+  1. the three-year model: both monthly figures compounded
+     across 36 months, managed and self-host side by side.
+  2. the one-page review: growth at 100M, the dimension lever,
+     and the two annual totals a budget owner signs.
 
 Run:  python -m costclock.cost
 """
@@ -41,6 +46,8 @@ def main() -> None:
     report(100_000_000, 512)
     cut = managed_monthly(100_000_000, 1536) - managed_monthly(100_000_000, 512)
     print(f"dimension lever at 100M vectors: saves ${cut:,.0f}/mo managed")
+    # TODO (Lesson 33): the three-year review — both monthly
+    # figures across 36 months, and the annual totals.
     print("costclock demo complete")
 
 
