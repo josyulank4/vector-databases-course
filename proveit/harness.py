@@ -1,10 +1,20 @@
 """The Eval Harness — Lesson 45 DEMO.
 
-Grades the course's dense retrieval against exact-search ground truth
-on the golden query set: recall@10 against the full relevant set,
-nDCG@10 against the graded judgments, and a 95% confidence interval
-on mean recall by the normal approximation — the reporting shape
-Lesson 46 turns into decisions.
+START SCAFFOLD (tag l45-start): the plumbing is here — the golden
+queries load, exact search ranks them, and the table prints. But
+read the run the way Lesson 43 taught: the harness counts EVERY
+graded document (grade >= 1, mentions included) as a needle, so
+recall grades against the wrong denominator, and the interval is
+a placeholder constant instead of a spread measured from the
+per-query recalls. The finished version lives at tag l45-finish.
+
+Lesson task — write, in this file:
+  1. the relevance threshold: relevant means grade >= 2 (Lesson
+     43's stated course definition), so recall's denominator is
+     the needle set, not every graded mention.
+  2. the confidence interval: the sample variance of the
+     per-query recalls and the normal-approximation half-width,
+     1.96 standard errors of the mean, clipped to [0, 1].
 
 Run:  python -m proveit.harness
 """
@@ -20,13 +30,15 @@ def run() -> dict[str, float]:
     recalls, ndcgs = [], []
     for query, grades in QUERIES:
         ranked = [d for d, _ in brute_force(normalize(embed(query)), vectors, k=12)]
-        relevant = {d for d, g in grades.items() if g >= 2}
+        relevant = {d for d, g in grades.items() if g >= 1}
         hit = len(set(ranked[:10]) & relevant)
         recalls.append(hit / len(relevant))
         ndcgs.append(ndcg_at_k(ranked, grades, 10))
     mean_r = sum(recalls) / len(recalls)
-    var = sum((r - mean_r) ** 2 for r in recalls) / max(len(recalls) - 1, 1)
-    half = 1.96 * math.sqrt(var / len(recalls)) if len(recalls) > 1 else 0.0
+    # TODO (lesson task 2): replace this placeholder with the
+    # measured interval — sample variance of the per-query recalls,
+    # half-width 1.96 * sqrt(var / n), clipped to [0, 1].
+    half = 0.05
     return {"mean_recall": mean_r, "ci_low": max(0.0, mean_r - half),
             "ci_high": min(1.0, mean_r + half),
             "mean_ndcg": sum(ndcgs) / len(ndcgs)}
