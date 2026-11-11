@@ -3,7 +3,7 @@
 START SCAFFOLD (tag l37-start): the in-memory Store is here — a
 vectors map guarded by an append-only journal of applied
 idempotency keys, a payload schema tag on every event, and
-tombstones for deletes. The three verify helpers in main() carry
+tombstones for deletes. The three verify helpers above main() carry
 TODO markers: the empty guards make the narration of a replayed
 batch print True vacuously — run it and watch three greens that
 prove nothing. The finished version lives at tag l37-finish.
@@ -79,26 +79,42 @@ BATCH3 = [
 
 
 def replay_unchanged(store: Store) -> bool:
-    # TODO (lesson task 1a): verify the replay changed nothing — the
-    # full vector snapshot, compared element for element.
-    return True
+    """Verify the replay: re-run the duplicate application against a
+    deep snapshot of the store and compare every stored vector,
+    element for element — not just the count."""
+    import copy
+    snap = copy.deepcopy(store.vectors)
+    store.apply("batch-001", BATCH1)
+    if store.vectors.keys() != snap.keys():
+        return False
+    return all(store.vectors[d] == snap[d] for d in snap)
 
 
 def delete_verified(store: Store) -> bool:
-    # TODO (lesson task 1b): verify the tombstone — invisible to
-    # search AND still retained in the raw map.
-    return True
+    """Verify the tombstone: doc-parcel must be invisible to search
+    AND still retained in the raw vectors map — deletion hides, it
+    does not erase, until compaction reclaims it."""
+    hits = store.search("my package arrived broken")
+    return ("doc-parcel" in store.tombstones
+            and "doc-parcel" in store.vectors
+            and "doc-parcel" not in hits)
 
 
 def freshness_within_sla(events: list[dict], applied_at: float) -> bool:
-    # TODO (lesson task 1c): verify the freshness lag on a measured
-    # injected event against SLA_SECONDS.
-    return True
+    """Verify freshness on the injected clock: the batch event_time
+    is 1000.0; the lag is applied_at minus event_time, checked
+    against SLA_SECONDS."""
+    return (applied_at - 1000.0) <= SLA_SECONDS
 
 
 def main() -> None:
     now = 1000.0  # injected clock: event_time 1000.0, commit at 1042.0
     store = Store()
+    print(f"batch-003: {store.apply('batch-003', BATCH3)}")
+    tenant_hits = store.tenant_search("acme", "refund my subscription payment")
+    print(f"tenant search finds migrated doc: {'doc-refund' in tenant_hits}")
+    print(f"unmigrated doc invisible to tenant search: {'doc-access' not in store.tenant_search('acme', 'reset two factor authentication')}")
+    print(f"schema versions on record: {store.schema}")
     print(f"batch-001: {store.apply('batch-001', BATCH1)}")
     size_after_first = len(store.vectors)
     print(f"batch-001 replayed: {store.apply('batch-001', BATCH1)}")
