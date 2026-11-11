@@ -41,12 +41,35 @@ REVIEW_ITEMS = ["retrieval quality", "tenant isolation",
 
 
 def readiness(mean_recall: float, leaks: int) -> list[tuple[str, str, str]]:
-    # TODO (lesson task): attach the evidence — harness numbers
-    # for quality, the capstone's own count for isolation, a
-    # replay for idempotency, honest escalation where the stack
-    # carries no evidence.
-    rows = [(name, "NOT RUN", "evidence not yet attached")
-            for name in REVIEW_ITEMS]
+    from freshpipe.ingest import BATCH1, Store
+    from proveit.harness import run as eval_run
+
+    rows = []
+    r = eval_run()
+    rows.append(("retrieval quality",
+                 "APPROVED" if r["mean_recall"] >= GATE_RECALL else "BLOCKED",
+                 f"harness mean recall@10 {r['mean_recall']:.3f} against the {GATE_RECALL:.2f} gate"))
+    rows.append(("tenant isolation",
+                 "APPROVED" if leaks == 0 else "BLOCKED",
+                 f"{leaks} cross-tenant leaks in the capstone run above"))
+    store = Store()
+    store.apply("b1", BATCH1)
+    store.apply("b1", BATCH1)
+    rows.append(("ingestion idempotency",
+                 "APPROVED" if len(store.vectors) == 3 else "BLOCKED",
+                 f"a replayed batch leaves the store at {len(store.vectors)} documents"))
+    if hasattr(sys.modules[__name__], "restore"):
+        rows.append(("durability evidence", "APPROVED",
+                     "a restore entry point exists to drill"))
+    else:
+        rows.append(("durability evidence", "ESCALATED",
+                     "no restore entry point exists in the stack: Lesson 30's drill has nothing to run"))
+    if hasattr(sys.modules[__name__], "load_report"):
+        rows.append(("load evidence", "APPROVED",
+                     "a measured load report ships with the stack"))
+    else:
+        rows.append(("load evidence", "ESCALATED",
+                     "no measured load run ships with the stack: sizing stays arithmetic (Lessons 29 and 33)"))
     return rows
 
 
