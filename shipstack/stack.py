@@ -1,25 +1,27 @@
-"""The Capstone Build — Lesson 50 DEMO.
+"""Capstone Review: Ship the Store — Lesson 51 DEMO.
 
-START SCAFFOLD (tag l50-start): the whole course in one file, and
-the plumbing runs — the golden queries are graded through hybrid
-fusion (hybridrank's RRF), the recall gate is stated, and the
-verdict prints. But read the run the way this course taught you
-to read any verdict. Two defects stand between this stack and an
-earned SHIP. The fused list is never filtered by tenant, so
-another tenant's documents sit inside the results the stack
-would serve. And the verdict line never reads the leak count it
-prints: the gate is a recall gate only, so the stack can leak
-and still ship. The finished version lives at tag l50-finish.
+START SCAFFOLD (tag l51-start): the capstone stack from Lesson
+50 stands finished — fusion, the tenant predicate, the gated
+verdict — and below it sits the readiness review, sketched: five
+items named, none graded. main() already reads the review's
+blocker list, but the sketch returns every item ungraded, so the
+blocker list is empty by construction and the verdict prints
+SHIP over a review that never ran. A review that has not run
+cannot approve anything. The finished version lives at tag
+l51-finish.
 
 Lesson task — write, in this file:
-  1. the tenant predicate inside tenant_fused: Lesson 25's rule,
-     applied to the fused list before anything is served.
-  2. the honest verdict: SHIP only when recall clears the gate
-     AND the cross-tenant leak count is zero.
+  the evidence under each readiness item: the harness's measured
+  recall for quality, the capstone run's own leak count for
+  isolation, a replayed batch for idempotency — and an honest
+  ESCALATED, with its reason, for each item this stack carries
+  no evidence for.
 
 Run:  python -m shipstack.stack
 """
 from __future__ import annotations
+
+import sys
 
 from hybridrank.hybrid import dense_list, rrf, sparse_list
 from tenantsafe.store import META
@@ -33,6 +35,21 @@ def tenant_fused(tenant: str, query: str) -> list[str]:
     return [d for d in fused if META[d]["tenant"] == tenant]
 
 
+REVIEW_ITEMS = ["retrieval quality", "tenant isolation",
+                "ingestion idempotency", "durability evidence",
+                "load evidence"]
+
+
+def readiness(mean_recall: float, leaks: int) -> list[tuple[str, str, str]]:
+    # TODO (lesson task): attach the evidence — harness numbers
+    # for quality, the capstone's own count for isolation, a
+    # replay for idempotency, honest escalation where the stack
+    # carries no evidence.
+    rows = [(name, "NOT RUN", "evidence not yet attached")
+            for name in REVIEW_ITEMS]
+    return rows
+
+
 def main() -> None:
     recalls, leaks = [], 0
     for query, grades in QUERIES:
@@ -41,9 +58,19 @@ def main() -> None:
         recalls.append(len(set(hits[:10]) & relevant) / len(relevant))
         leaks += sum(1 for d in hits if META[d]["tenant"] != "acme")
     mean_recall = sum(recalls) / len(recalls)
-    verdict = "SHIP" if mean_recall >= GATE_RECALL and leaks == 0 else "NO-GO"
     print(f"capstone mean recall@10 (tenant acme): {mean_recall:.3f}")
     print(f"cross-tenant leaks: {leaks}")
+    rows = readiness(mean_recall, leaks)
+    for name, status, evidence in rows:
+        print(f"readiness: {name}: {status} - {evidence}")
+    blockers = [n for n, s, _ in rows if s == "BLOCKED"]
+    escalations = [n for n, s, _ in rows if s == "ESCALATED"]
+    print(f"blockers: {', '.join(blockers) if blockers else 'none'}")
+    if escalations:
+        print(f"escalations: {len(escalations)} ({', '.join(escalations)})")
+    else:
+        print("escalations: none")
+    verdict = "SHIP" if mean_recall >= GATE_RECALL and leaks == 0 and not blockers else "NO-GO"
     print(f"verdict: {verdict}")
     print("shipstack demo complete")
 
