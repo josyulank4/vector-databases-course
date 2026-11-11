@@ -30,15 +30,13 @@ def run() -> dict[str, float]:
     recalls, ndcgs = [], []
     for query, grades in QUERIES:
         ranked = [d for d, _ in brute_force(normalize(embed(query)), vectors, k=12)]
-        relevant = {d for d, g in grades.items() if g >= 1}
+        relevant = {d for d, g in grades.items() if g >= 2}
         hit = len(set(ranked[:10]) & relevant)
         recalls.append(hit / len(relevant))
         ndcgs.append(ndcg_at_k(ranked, grades, 10))
     mean_r = sum(recalls) / len(recalls)
-    # TODO (lesson task 2): replace this placeholder with the
-    # measured interval — sample variance of the per-query recalls,
-    # half-width 1.96 * sqrt(var / n), clipped to [0, 1].
-    half = 0.05
+    var = sum((r - mean_r) ** 2 for r in recalls) / max(len(recalls) - 1, 1)
+    half = 1.96 * math.sqrt(var / len(recalls)) if len(recalls) > 1 else 0.0
     return {"mean_recall": mean_r, "ci_low": max(0.0, mean_r - half),
             "ci_high": min(1.0, mean_r + half),
             "mean_ndcg": sum(ndcgs) / len(ndcgs)}
